@@ -5,48 +5,125 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BIXIUS CONVERTER - Web Audio Tool</title>
     <style>
+        /* Variabili di Colore per i Temi */
+        :root {
+            --bg-body: #0b0d0a;
+            --bg-container: #141911;
+            --bg-brand: linear-gradient(135deg, #1c2318, #11160e);
+            --border-color: #232a1e;
+            --border-brand: #2c3725;
+            --text-main: #ffffff;
+            --text-muted: #a2a69c;
+            --btn-sec-bg: #1c2318;
+            --btn-sec-border: #35432e;
+            --btn-sec-hover: #253020;
+            --btn-sec-hover-border: #485c3f;
+        }
+
+        [data-theme="light"] {
+            --bg-body: #f4f6f3;
+            --bg-container: #ffffff;
+            --bg-brand: linear-gradient(135deg, #e8ebe6, #f4f6f3);
+            --border-color: #d1d7cd;
+            --border-brand: #c2c9bd;
+            --text-main: #141911;
+            --text-muted: #5a6154;
+            --btn-sec-bg: #e8ebe6;
+            --btn-sec-border: #b8c0b2;
+            --btn-sec-hover: #dadfd7;
+            --btn-sec-hover-border: #a3ae9b;
+        }
+
         /* Reset e Font */
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
             font-family: 'Roboto', system-ui, -apple-system, sans-serif;
+            transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
         }
 
         body {
-            background-color: #0b0d0a;
-            color: #c5c7be;
+            background-color: var(--bg-body);
+            color: var(--text-muted);
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             padding: 40px 20px;
+            position: relative;
         }
 
-        /* Layout Web Desktop Pulito */
+        /* Switch Animato Tema */
+        .theme-switch-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        .switch-track {
+            width: 50px;
+            height: 26px;
+            background-color: #1c2318;
+            border: 1px solid #35432e;
+            border-radius: 100px;
+            position: relative;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        [data-theme="light"] .switch-track {
+            background-color: #e8ebe6;
+            border-color: #b8c0b2;
+        }
+
+        .switch-thumb {
+            width: 20px;
+            height: 20px;
+            background-color: #e09f67;
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            left: 3px;
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        [data-theme="light"] .switch-thumb {
+            transform: translateX(22px);
+            background-color: #c6834b;
+        }
+
+        /* Layout Principale */
         .converter-container {
             width: 100%;
             max-width: 650px;
-            background-color: #141911; 
+            background-color: var(--bg-container); 
             border-radius: 24px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
-            border: 1px solid #232a1e;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+            border: 1px solid var(--border-color);
             padding: 40px;
             text-align: center;
         }
 
         .brand-container {
-            background: linear-gradient(135deg, #1c2318, #11160e);
+            background: var(--bg-brand);
             padding: 32px;
             border-radius: 16px;
             margin-bottom: 32px;
-            border: 1px solid #2c3725;
+            border: 1px solid var(--border-brand);
         }
 
         h1 {
             font-size: 28px;
             font-weight: 900;
-            color: #ffffff; 
+            color: var(--text-main); 
             letter-spacing: 1px;
             margin-bottom: 8px;
         }
@@ -65,7 +142,7 @@
 
         .status-text {
             font-size: 16px;
-            color: #a2a69c;
+            color: var(--text-muted);
             margin-bottom: 32px;
             min-height: 24px;
             line-height: 1.5;
@@ -76,10 +153,10 @@
             display: none;
             width: 100%;
             margin-bottom: 32px;
-            background: rgba(0,0,0,0.3);
+            background: rgba(0,0,0,0.05);
             padding: 20px;
             border-radius: 12px;
-            border: 1px solid #232a1e;
+            border: 1px solid var(--border-color);
         }
 
         .progress-labels {
@@ -87,19 +164,19 @@
             justify-content: space-between;
             font-size: 14px;
             font-weight: 500;
-            color: #a2a69c;
+            color: var(--text-muted);
             margin-bottom: 12px;
         }
         
         #progressPercentage {
-            color: #ffffff; 
+            color: var(--text-main); 
             font-weight: bold;
         }
 
         .progress-bar-bg {
             width: 100%;
             height: 8px;
-            background-color: #1c2318;
+            background-color: var(--btn-sec-bg);
             border-radius: 100px;
             overflow: hidden;
         }
@@ -109,7 +186,7 @@
             height: 100%;
             background: linear-gradient(90deg, #e09f67, #ffc28d); 
             border-radius: 100px;
-            box-shadow: 0 0 12px rgba(224, 159, 103, 0.6); 
+            box-shadow: 0 0 12px rgba(224, 159, 103, 0.4); 
             transition: width 0.1s linear;
         }
 
@@ -130,20 +207,19 @@
             font-size: 16px;
             font-weight: 700;
             cursor: pointer;
-            transition: all 0.2s ease-in-out;
             letter-spacing: 0.5px;
             text-decoration: none;
         }
 
         .btn-secondary {
-            background-color: #1c2318;
-            color: #ffffff; 
-            border: 1px solid #35432e;
+            background-color: var(--btn-sec-bg);
+            color: var(--text-main); 
+            border: 1px solid var(--btn-sec-border);
         }
 
         .btn-secondary:hover:not(:disabled) {
-            background-color: #253020;
-            border-color: #485c3f;
+            background-color: var(--btn-sec-hover);
+            border-color: var(--btn-sec-hover-border);
         }
 
         .btn-primary {
@@ -159,12 +235,13 @@
         }
 
         .btn:disabled {
-            background: #1c2019 !important;
-            color: #3f4739 !important;
-            border: 1px solid #141812 !important;
+            background: rgba(0,0,0,0.1) !important;
+            color: var(--text-muted) !important;
+            border: 1px solid var(--border-color) !important;
             cursor: not-allowed;
             box-shadow: none !important;
             transform: none !important;
+            opacity: 0.5;
         }
 
         #fileInput {
@@ -179,10 +256,17 @@
 </head>
 <body>
 
+    <div class="theme-switch-container">
+        <span>Tema</span>
+        <div class="switch-track" id="themeSwitch" onclick="toggleTheme()">
+            <div class="switch-thumb"></div>
+        </div>
+    </div>
+
     <div class="converter-container">
         <div class="brand-container">
             <h1>BIXIUS CONVERTER</h1>
-            <div class="badge">FLAC TO MP3 • 320KBPS + COVER ART</div>
+            <div class="badge">FLAC TO MP3 • PRO ENGINE</div>
         </div>
         
         <p class="status-text" id="statusLabel">Inizializzazione motore di conversione...</p>
@@ -211,6 +295,13 @@
     </div>
 
     <script>
+        // Gestione Tema Chiara/Scura
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+        }
+
         const { createFFmpeg, fetchFile } = FFmpeg;
         const ffmpeg = createFFmpeg({ log: true });
         let fileCaricati = [];
@@ -224,7 +315,7 @@
                 statusLabel.innerText = "Nessun file selezionato. Pronto al caricamento.";
                 selectBtn.removeAttribute('disabled');
             } catch (error) {
-                statusLabel.innerHTML = "<span style='color:#ff5555;'>Il motore non si è avviato. Ricarica la pagina per inizializzarlo.</span>";
+                statusLabel.innerHTML = "<span style='color:#ff5555;'>Il motore non si è avviato. Ricarica la pagina.</span>";
                 console.error(error);
             }
         }
@@ -243,7 +334,7 @@
             document.getElementById('progressPercentage').innerText = '0%';
 
             if (fileCaricati.length > 0) {
-                status.innerHTML = `File pronti per l'elaborazione: <span style='color:#ffffff; font-weight:bold;'>${fileCaricati.length} brani FLAC</span>`;
+                status.innerHTML = `File pronti per l'elaborazione: <span style='color:var(--text-main); font-weight:bold;'>${fileCaricati.length} brani FLAC</span>`;
                 convertBtn.removeAttribute('disabled');
             } else {
                 status.innerText = "Nessun file selezionato. Pronto al caricamento.";
@@ -251,7 +342,7 @@
             }
         }
 
-        // 3. Conversione e Compressione ZIP
+        // 3. Conversione e Compressione ZIP + Log Errori
         async function avviaConversioneReale() {
             if (fileCaricati.length === 0) return;
 
@@ -271,6 +362,7 @@
             progressArea.style.display = 'block';
 
             const zip = new JSZip();
+            let braniFalliti = []; // Array per accumulare i log di eventuali errori
 
             ffmpeg.setProgress(({ ratio }) => {
                 if (ratio >= 0 && ratio <= 1) {
@@ -285,43 +377,55 @@
                 const nomeInput = file.name;
                 const nomeOutput = nomeInput.replace(/\.[^/.]+$/, "") + ".mp3";
 
-                progressFileIndex.innerText = `Conversione brano ${i + 1} di ${fileCaricati.length}: ${file.name}`;
+                progressFileIndex.innerHTML = `Conversione brano ${i + 1} di ${fileCaricati.length}: <span style="color: var(--text-main); font-weight:bold;">${file.name}</span>`;
 
-                // Scrittura del FLAC originario nella memoria virtuale
-                ffmpeg.FS('writeFile', nomeInput, await fetchFile(file));
-                
-                /* Comandi FFmpeg ottimizzati:
-                  -i nomeInput -> Prende il FLAC
-                  -map 0:a -> Mappa la traccia audio
-                  -map 0:v? -> SE PRESENTE, mappa l'immagine incorporata (la copertina)
-                  -c:a libmp3lame -b:a 320k -> Converte in MP3 CBR 320kbps fisso
-                  -c:v copy -> Copia l'immagine direttamente senza rielaborarla (velocissimo)
-                  -map_metadata 0 -> Copia tutti i tag testuali originari
-                  -id3v2_version 3 -> Forza lo standard ID3v2.3, il più compatibile con Windows ed Explorer per mostrare le icone delle copertine
-                */
-                await ffmpeg.run(
-                    '-i', nomeInput, 
-                    '-map', '0:a', 
-                    '-map', '0:v?', 
-                    '-c:a', 'libmp3lame', 
-                    '-b:a', '320k', 
-                    '-c:v', 'copy', 
-                    '-map_metadata', '0', 
-                    '-id3v2_version', '3', 
-                    nomeOutput
-                );
-                
-                // Lettura file convertito e completo di metadati + immagine
-                const data = ffmpeg.FS('readFile', nomeOutput);
+                try {
+                    // Scrittura nella memoria virtuale
+                    ffmpeg.FS('writeFile', nomeInput, await fetchFile(file));
+                    
+                    /* Esecuzione FFmpeg con Multi-threading nativo:
+                       '-threads', '0' dice a FFmpeg di usare automaticamente tutti i core logici disponibili sul processore del PC o Smartphone */
+                    await ffmpeg.run('-i', nomeInput, '-threads', '0', '-ab', '320k', '-map_metadata', '0', nomeOutput);
+                    
+                    // Lettura e archiviazione nello ZIP
+                    const data = ffmpeg.FS('readFile', nomeOutput);
+                    zip.file(nomeOutput, data.buffer);
 
-                // Aggiunta allo ZIP
-                zip.file(nomeOutput, data.buffer);
+                    // Pulizia file riuscito
+                    ffmpeg.FS('unlink', nomeInput);
+                    ffmpeg.FS('unlink', nomeOutput);
 
-                // Pulizia memoria
-                ffmpeg.FS('unlink', nomeInput);
-                ffmpeg.FS('unlink', nomeOutput);
+                } catch (error) {
+                    console.error(`Errore sul file ${file.name}:`, error);
+                    // Registriamo il brano fallito per il txt finale
+                    braniFalliti.push(`File: ${file.name} | Errore riscontrato durante l'elaborazione FFmpeg.`);
+                    
+                    // Mostriamo a schermo un piccolo alert visivo temporaneo senza bloccare la coda
+                    progressFileIndex.innerHTML = `<span style="color:#ff5555; font-weight:bold;">Salta brano corrotto: ${file.name}</span>`;
+                    
+                    // Pulizia d'emergenza della memoria virtuale in caso di crash del singolo file
+                    try { ffmpeg.FS('unlink', nomeInput); } catch(e){}
+                    try { ffmpeg.FS('unlink', nomeOutput); } catch(e){}
+                }
             }
 
+            // --- Generazione del file LOG di testo (Solo se ci sono stati errori reali) ---
+            if (braniFalliti.length > 0) {
+                const testoLog = `BIXIUS CONVERTER - LOG DI ERRORE CONVERSIONE\n` +
+                                 `Data: ${new Date().toLocaleString()}\n` +
+                                 `Totale brani falliti/saltati: ${braniFalliti.length}\n` +
+                                 `--------------------------------------------------\n\n` +
+                                 braniFalliti.join('\n');
+                
+                const blobLog = new Blob([testoLog], { type: 'text/plain;charset=utf-8' });
+                const urlLog = URL.createObjectURL(blobLog);
+                const aLog = document.createElement('a');
+                aLog.href = urlLog;
+                aLog.download = "errori_conversione.txt";
+                aLog.click();
+            }
+
+            // Generazione pacchetto ZIP finale
             progressFileIndex.innerText = "Creazione pacchetto ZIP in corso...";
             progressBarFill.style.width = '100%';
             progressPercentage.innerText = '100%';
@@ -336,7 +440,12 @@
 
             progressArea.style.display = 'none';
             status.style.display = 'block';
-            status.innerHTML = "✨ <span style='color:#ffffff; font-weight:bold;'>Elaborazione completata!</span><br>L'archivio <span style='color:#e09f67;'>Music converted.zip</span> contiene i brani convertiti con le rispettive copertine.";
+
+            if (braniFalliti.length > 0) {
+                status.innerHTML = `✨ <span style='color:var(--text-main); font-weight:bold;'>Elaborazione conclusa!</span><br>L'archivio <span style='color:#e09f67;'>Music converted.zip</span> è pronto.<br>⚠️ <span style="color:#ff5555; font-weight:bold;">Attenzione:</span> alcuni file erano corrotti ed è stato scaricato un file <span style="color:#ff5555;">errori_conversione.txt</span> con i dettagli.`;
+            } else {
+                status.innerHTML = "✨ <span style='color:var(--text-main); font-weight:bold;'>Elaborazione completata con successo!</span><br>L'archivio <span style='color:#e09f67;'>Music converted.zip</span> è stato scaricato correttamente.";
+            }
             
             btnText.innerText = "Avvia Nuova Conversione";
             selectBtn.removeAttribute('disabled');
