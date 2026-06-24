@@ -182,7 +182,7 @@
     <div class="converter-container">
         <div class="brand-container">
             <h1>BIXIUS CONVERTER</h1>
-            <div class="badge">FLAC TO MP3 • 320KBPS CBR</div>
+            <div class="badge">FLAC TO MP3 • 320KBPS + COVER ART</div>
         </div>
         
         <p class="status-text" id="statusLabel">Inizializzazione motore di conversione...</p>
@@ -287,16 +287,34 @@
 
                 progressFileIndex.innerText = `Conversione brano ${i + 1} di ${fileCaricati.length}: ${file.name}`;
 
-                // Scrittura nella memoria virtuale
+                // Scrittura del FLAC originario nella memoria virtuale
                 ffmpeg.FS('writeFile', nomeInput, await fetchFile(file));
                 
-                // Conversione a 320k CBR mantenendo i metadati standard (-map_metadata 0)
-                await ffmpeg.run('-i', nomeInput, '-ab', '320k', '-map_metadata', '0', nomeOutput);
+                /* Comandi FFmpeg ottimizzati:
+                  -i nomeInput -> Prende il FLAC
+                  -map 0:a -> Mappa la traccia audio
+                  -map 0:v? -> SE PRESENTE, mappa l'immagine incorporata (la copertina)
+                  -c:a libmp3lame -b:a 320k -> Converte in MP3 CBR 320kbps fisso
+                  -c:v copy -> Copia l'immagine direttamente senza rielaborarla (velocissimo)
+                  -map_metadata 0 -> Copia tutti i tag testuali originari
+                  -id3v2_version 3 -> Forza lo standard ID3v2.3, il più compatibile con Windows ed Explorer per mostrare le icone delle copertine
+                */
+                await ffmpeg.run(
+                    '-i', nomeInput, 
+                    '-map', '0:a', 
+                    '-map', '0:v?', 
+                    '-c:a', 'libmp3lame', 
+                    '-b:a', '320k', 
+                    '-c:v', 'copy', 
+                    '-map_metadata', '0', 
+                    '-id3v2_version', '3', 
+                    nomeOutput
+                );
                 
-                // Lettura file convertito
+                // Lettura file convertito e completo di metadati + immagine
                 const data = ffmpeg.FS('readFile', nomeOutput);
 
-                // Aggiunta allo ZIP con il nome corretto
+                // Aggiunta allo ZIP
                 zip.file(nomeOutput, data.buffer);
 
                 // Pulizia memoria
@@ -318,7 +336,7 @@
 
             progressArea.style.display = 'none';
             status.style.display = 'block';
-            status.innerHTML = "✨ <span style='color:#ffffff; font-weight:bold;'>Elaborazione completata!</span><br>L'archivio <span style='color:#e09f67;'>Music converted.zip</span> è stato scaricato sul tuo computer.";
+            status.innerHTML = "✨ <span style='color:#ffffff; font-weight:bold;'>Elaborazione completata!</span><br>L'archivio <span style='color:#e09f67;'>Music converted.zip</span> contiene i brani convertiti con le rispettive copertine.";
             
             btnText.innerText = "Avvia Nuova Conversione";
             selectBtn.removeAttribute('disabled');
