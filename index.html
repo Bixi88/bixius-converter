@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BIXIUS CONVERTER - Web Audio Tool</title>
+    <style>
+        /* Reset e Font */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Roboto', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: #0b0d0a;
+            color: #c5c7be;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        /* Layout Web Desktop Pulito */
+        .converter-container {
+            width: 100%;
+            max-width: 650px;
+            background-color: #141911; 
+            border-radius: 24px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+            border: 1px solid #232a1e;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .brand-container {
+            background: linear-gradient(135deg, #1c2318, #11160e);
+            padding: 32px;
+            border-radius: 16px;
+            margin-bottom: 32px;
+            border: 1px solid #2c3725;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 900;
+            color: #ffffff; 
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .badge {
+            font-size: 12px;
+            color: #e09f67; 
+            background: rgba(224, 159, 103, 0.1);
+            padding: 6px 16px;
+            border-radius: 100px;
+            display: inline-block;
+            letter-spacing: 0.5px;
+            border: 1px solid rgba(224, 159, 103, 0.2);
+            font-weight: 600;
+        }
+
+        .status-text {
+            font-size: 16px;
+            color: #a2a69c;
+            margin-bottom: 32px;
+            min-height: 24px;
+            line-height: 1.5;
+        }
+
+        /* Container Progresso */
+        .progress-container {
+            display: none;
+            width: 100%;
+            margin-bottom: 32px;
+            background: rgba(0,0,0,0.3);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #232a1e;
+        }
+
+        .progress-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            font-weight: 500;
+            color: #a2a69c;
+            margin-bottom: 12px;
+        }
+        
+        #progressPercentage {
+            color: #ffffff; 
+            font-weight: bold;
+        }
+
+        .progress-bar-bg {
+            width: 100%;
+            height: 8px;
+            background-color: #1c2318;
+            border-radius: 100px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #e09f67, #ffc28d); 
+            border-radius: 100px;
+            box-shadow: 0 0 12px rgba(224, 159, 103, 0.6); 
+            transition: width 0.1s linear;
+        }
+
+        /* Pulsanti */
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .btn {
+            width: 100%;
+            max-width: 320px;
+            padding: 16px 32px;
+            border-radius: 12px;
+            border: none;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            letter-spacing: 0.5px;
+            text-decoration: none;
+        }
+
+        .btn-secondary {
+            background-color: #1c2318;
+            color: #ffffff; 
+            border: 1px solid #35432e;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background-color: #253020;
+            border-color: #485c3f;
+        }
+
+        .btn-primary {
+            background: linear-gradient(180deg, #e09f67, #c6834b);
+            color: #0b0d0a;
+            box-shadow: 0 4px 12px rgba(224, 159, 103, 0.2);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: linear-gradient(180deg, #eba973, #d48f56);
+            box-shadow: 0 6px 20px rgba(224, 159, 103, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            background: #1c2019 !important;
+            color: #3f4739 !important;
+            border: 1px solid #141812 !important;
+            cursor: not-allowed;
+            box-shadow: none !important;
+            transform: none !important;
+        }
+
+        #fileInput {
+            display: none;
+        }
+    </style>
+
+    <script src="coi-serviceworker.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/browser-id3-writer@4.4.0/dist/browser-id3-writer.min.js"></script>
+    
+    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
+</head>
+<body>
+
+    <div class="converter-container">
+        <div class="brand-container">
+            <h1>BIXIUS CONVERTER</h1>
+            <div class="badge">FLAC TO MP3 • METADATA & COVER ART</div>
+        </div>
+        
+        <p class="status-text" id="statusLabel">Inizializzazione motore di conversione...</p>
+
+        <div class="progress-container" id="progressArea">
+            <div class="progress-labels">
+                <span id="progressFileIndex">Pronto...</span>
+                <span id="progressPercentage">0%</span>
+            </div>
+            <div class="progress-bar-bg">
+                <div class="progress-bar-fill" id="progressBarFill"></div>
+            </div>
+        </div>
+
+        <div class="btn-group">
+            <input type="file" id="fileInput" multiple accept=".flac" onchange="gestisciSelezione(this)">
+
+            <button class="btn btn-secondary" id="selectBtn" onclick="document.getElementById('fileInput').click()" disabled>
+                Sfoglia file FLAC
+            </button>
+            
+            <button class="btn btn-primary" id="convertBtn" onclick="avviaConversioneReale()" disabled>
+                <span id="btnText">Avvia Conversione</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const { createFFmpeg, fetchFile } = FFmpeg;
+        const ffmpeg = createFFmpeg({ log: true });
+        let fileCaricati = [];
+
+        // 1. Inizializzazione FFmpeg
+        async function inizializzaFFmpeg() {
+            const statusLabel = document.getElementById('statusLabel');
+            const selectBtn = document.getElementById('selectBtn');
+            try {
+                await ffmpeg.load();
+                statusLabel.innerText = "Nessun file selezionato. Pronto al caricamento.";
+                selectBtn.removeAttribute('disabled');
+            } catch (error) {
+                statusLabel.innerHTML = "<span style='color:#ff5555;'>Il motore non si è avviato. Ricarica la pagina per inizializzarlo.</span>";
+                console.error(error);
+            }
+        }
+        inizializzaFFmpeg();
+
+        // 2. Gestione selezione file
+        function gestisciSelezione(input) {
+            fileCaricati = Array.from(input.files);
+            const status = document.getElementById('statusLabel');
+            const convertBtn = document.getElementById('convertBtn');
+            const progressArea = document.getElementById('progressArea');
+            
+            status.style.display = 'block';
+            progressArea.style.display = 'none';
+            document.getElementById('progressBarFill').style.width = '0%';
+            document.getElementById('progressPercentage').innerText = '0%';
+
+            if (fileCaricati.length > 0) {
+                status.innerHTML = `File pronti per l'elaborazione: <span style='color:#ffffff; font-weight:bold;'>${fileCaricati.length} brani FLAC</span>`;
+                convertBtn.removeAttribute('disabled');
+            } else {
+                status.innerText = "Nessun file selezionato. Pronto al caricamento.";
+                convertBtn.setAttribute('disabled', 'true');
+            }
+        }
+
+        // Helper asincrono per leggere i tag con jsmediatags
+        function leggiTagFlac(file) {
+            return new Promise((resolve) => {
+                if (!window.jsmediatags) {
+                    resolve(null);
+                    return;
+                }
+                window.jsmediatags.read(file, {
+                    onSuccess: function(tag) {
+                        resolve(tag.tags);
+                    },
+                    onError: function(error) {
+                        console.log("Tag nativi non estratti o assenti:", error);
+                        resolve(null);
+                    }
+                });
+            });
+        }
+
+        // 3. Conversione, Lettura/Scrittura Tag e Compressione ZIP
+        async function avviaConversioneReale() {
+            if (fileCaricati.length === 0) return;
+
+            const status = document.getElementById('statusLabel');
+            const selectBtn = document.getElementById('selectBtn');
+            const convertBtn = document.getElementById('convertBtn');
+            const btnText = document.getElementById('btnText');
+            
+            const progressArea = document.getElementById('progressArea');
+            const progressBarFill = document.getElementById('progressBarFill');
+            const progressPercentage = document.getElementById('progressPercentage');
+            const progressFileIndex = document.getElementById('progressFileIndex');
+
+            selectBtn.setAttribute('disabled', 'true');
+            convertBtn.setAttribute('disabled', 'true');
+            status.style.display = 'none'; 
+            progressArea.style.display = 'block';
+
+            const zip = new JSZip();
+
+            ffmpeg.setProgress(({ ratio }) => {
+                if (ratio >= 0 && ratio <= 1) {
+                    const progressoCorrente = Math.round(ratio * 100);
+                    progressBarFill.style.width = progressoCorrente + '%';
+                    progressPercentage.innerText = progressoCorrente + '%';
+                }
+            });
+
+            for (let i = 0; i < fileCaricati.length; i++) {
+                const file = fileCaricati[i];
+                const nomePulitoSenzaEstensione = file.name.replace(/\.[^/.]+$/, "");
+                progressFileIndex.innerText = `Conversione brano ${i + 1} di ${fileCaricati.length}: ${file.name}`;
+                
+                // Estrazione preventiva dei tag originali dal FLAC
+                const tagOriginali = await leggiTagFlac(file);
+
+                const nomeInput = file.name;
+                const nomeOutput = nomePulitoSenzaEstensione + ".mp3";
+
+                // Conversione via FFmpeg a 320k CBR costante
+                ffmpeg.FS('writeFile', nomeInput, await fetchFile(file));
+                await ffmpeg.run('-i', nomeInput, '-ab', '320k', nomeOutput);
+                const mp3PuroDati = ffmpeg.FS('readFile', nomeOutput);
+
+                // Scrittura dei tag ID3v2 nell'MP3 appena generato
+                try {
+                    const writer = new ID3Writer(mp3PuroDati.buffer);
+                    
+                    // Se mancano i tag nel FLAC, estraiamo i valori di default o usiamo il nome del file
+                    const titolo = (tagOriginali && tagOriginali.title) ? tagOriginali.title : nomePulitoSenzaEstensione;
+                    const artista = (tagOriginali && tagOriginali.artist) ? tagOriginali.artist : "Unknown Artist";
+                    const album = (tagOriginali && tagOriginali.album) ? tagOriginali.album : "Music Converted";
+                    const anno = (tagOriginali && tagOriginali.year) ? parseInt(tagOriginali.year) : null;
+                    const traccia = (tagOriginali && tagOriginali.track) ? parseInt(tagOriginali.track) : null;
+                    const genere = (tagOriginali && tagOriginali.genre) ? [tagOriginali.genre] : ["Tracks"];
+
+                    writer.setFrame('TIT2', titolo)
+                          .setFrame('TPE1', [artista])
+                          .setFrame('TALB', album)
+                          .setFrame('TCON', genere);
+                    
+                    if (anno && !isNaN(anno)) writer.setFrame('TYER', anno);
+                    if (traccia && !isNaN(traccia)) writer.setFrame('TRCK', traccia.toString());
+
+                    // Se c'è una copertina incorporata nel FLAC, la inseriamo
+                    if (tagOriginali && tagOriginali.picture) {
+                        const pic = tagOriginali.picture;
+                        const formatoImmagine = pic.mime || "image/jpeg";
+                        const byteImmagine = new Uint8Array(pic.data);
+                        
+                        writer.setFrame('APIC', {
+                            type: 3, // Front cover
+                            data: byteImmagine.buffer,
+                            description: 'Front Cover',
+                            useCover: true,
+                            mime: formatoImmagine
+                        });
+                    }
+
+                    writer.addTag();
+                    zip.file(nomeOutput, writer.arrayBuffer);
+
+                } catch (tagError) {
+                    console.error("Errore scrittura metadati avanzati, salvo brano standard:", tagError);
+                    zip.file(nomeOutput, mp3PuroDati.buffer);
+                }
+
+                ffmpeg.FS('unlink', nomeInput);
+                ffmpeg.FS('unlink', nomeOutput);
+            }
+
+            progressFileIndex.innerText = "Creazione pacchetto ZIP in corso...";
+            progressBarFill.style.width = '100%';
+            progressPercentage.innerText = '100%';
+
+            const contenutoZip = await zip.generateAsync({ type: 'blob' });
+            
+            const url = URL.createObjectURL(contenutoZip);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "Music converted.zip";
+            a.click();
+
+            progressArea.style.display = 'none';
+            status.style.display = 'block';
+            status.innerHTML = "✨ <span style='color:#ffffff; font-weight:bold;'>Elaborazione completata!</span><br>L'archivio <span style='color:#e09f67;'>Music converted.zip</span> è pronto con metadati e copertine incorporate.";
+            
+            btnText.innerText = "Avvia Nuova Conversione";
+            selectBtn.removeAttribute('disabled');
+            fileCaricati = [];
+            document.getElementById('fileInput').value = "";
+        }
+    </script>
+</body>
+</html>
