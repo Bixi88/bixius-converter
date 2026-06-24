@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BIXIUS CONVERTER - Real Web App</title>
+    <style>
+        /* Reset e Font di sistema */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Roboto', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: #0b0d0a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            color: #c5c7be;
+        }
+
+        /* Simulatore Smartphone */
+        .phone-container {
+            width: 360px;
+            height: 740px;
+            background-color: #141911; 
+            border-radius: 44px;
+            box-shadow: 0 30px 70px rgba(0, 0, 0, 0.8), inset 0 1px 3px rgba(255,255,255,0.05);
+            border: 4px solid #232a1e;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .status-bar {
+            height: 36px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 28px;
+            font-size: 12px;
+            font-weight: 500;
+            color: #71796a;
+        }
+
+        .app-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 28px;
+            text-align: center;
+        }
+
+        .brand-container {
+            background: linear-gradient(135deg, #1c2318, #11160e);
+            padding: 28px 24px;
+            border-radius: 32px;
+            width: 100%;
+            margin-bottom: 40px;
+            border: 1px solid #2c3725;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 900;
+            color: #ffffff; 
+            line-height: 1.2;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        h1 small {
+            font-size: 12px;
+            color: #e09f67; 
+            display: block;
+            margin-top: 8px;
+            font-weight: 600;
+            background: rgba(224, 159, 103, 0.1);
+            padding: 6px 16px;
+            border-radius: 100px;
+            display: inline-block;
+            letter-spacing: 0.5px;
+            border: 1px solid rgba(224, 159, 103, 0.2);
+        }
+
+        .status-text {
+            font-size: 15px;
+            color: #a2a69c;
+            margin-bottom: 32px;
+            min-height: 48px;
+            line-height: 1.5;
+        }
+
+        .progress-container {
+            display: none;
+            width: 90%;
+            margin-bottom: 40px;
+            background: rgba(0,0,0,0.2);
+            padding: 16px;
+            border-radius: 20px;
+            border: 1px solid #232a1e;
+        }
+
+        .progress-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            font-weight: 500;
+            color: #a2a69c;
+            margin-bottom: 10px;
+        }
+        
+        #progressPercentage {
+            color: #ffffff; 
+            font-weight: bold;
+        }
+
+        .progress-bar-bg {
+            width: 100%;
+            height: 6px;
+            background-color: #1c2318;
+            border-radius: 100px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #e09f67, #ffc28d); 
+            border-radius: 100px;
+            box-shadow: 0 0 12px rgba(224, 159, 103, 0.6); 
+            transition: width 0.1s linear;
+        }
+
+        /* Bottoni */
+        .btn {
+            width: 90%;
+            padding: 16px 28px;
+            border-radius: 24px;
+            border: none;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+            margin-bottom: 16px;
+            letter-spacing: 0.5px;
+            position: relative;
+            display: inline-block;
+            text-decoration: none;
+        }
+
+        .btn-secondary {
+            background-color: #1c2318;
+            color: #ffffff; 
+            border: 1px solid #35432e;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+        }
+
+        .btn-secondary:hover {
+            background-color: #253020;
+            border-color: #485c3f;
+        }
+
+        .btn-primary {
+            background: linear-gradient(180deg, #e09f67, #c6834b);
+            color: #0b0d0a;
+            box-shadow: 0 8px 24px rgba(224, 159, 103, 0.25), inset 0 1px 1px rgba(255,255,255,0.3);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: linear-gradient(180deg, #eba973, #d48f56);
+            box-shadow: 0 12px 32px rgba(224, 159, 103, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:disabled {
+            background: #1c2019;
+            color: #3f4739;
+            cursor: not-allowed;
+            box-shadow: none;
+            border: 1px solid #141812;
+            transform: none;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .nav-bar {
+            height: 28px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding-bottom: 12px;
+        }
+        .nav-line {
+            width: 108px;
+            height: 4px;
+            background-color: #2c3725;
+            border-radius: 10px;
+        }
+    </style>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/coi-serviceworker/0.1.7/coi-serviceworker.min.js"></script>
+
+    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
+</head>
+<body>
+
+    <div class="phone-container">
+        <div class="status-bar">
+            <span>12:00</span>
+            <span style="color: #ffffff;">5G 🔋 98%</span>
+        </div>
+
+        <div class="app-content">
+            <div class="brand-container">
+                <h1>BIXIUS CONVERTER</h1>
+                <small>FLAC TO MP3 • 320KBPS CBR</small>
+            </div>
+            
+            <p class="status-text" id="statusLabel">Inizializzazione convertitore...</p>
+
+            <div class="progress-container" id="progressArea">
+                <div class="progress-labels">
+                    <span id="progressFileIndex">Elaborazione...</span>
+                    <span id="progressPercentage">0%</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="progressBarFill"></div>
+                </div>
+            </div>
+
+            <input type="file" id="fileInput" multiple accept=".flac" onchange="gestisciSelezione(this)">
+
+            <button class="btn btn-secondary" id="selectBtn" onclick="document.getElementById('fileInput').click()" disabled>
+                Sfoglia file FLAC
+            </button>
+            
+            <button class="btn btn-primary" id="convertBtn" onclick="avviaConversioneReale()" disabled>
+                <span id="btnText">Avvia Conversione</span>
+            </button>
+        </div>
+
+        <div class="nav-bar">
+            <div class="nav-line"></div>
+        </div>
+    </div>
+
+    <script>
+        const { createFFmpeg, fetchFile } = FFmpeg;
+        const ffmpeg = createFFmpeg({ log: true });
+        
+        let fileCaricati = [];
+
+        // 1. Inizializzazione di FFmpeg all'avvio della pagina
+        async function inizializzaFFmpeg() {
+            const statusLabel = document.getElementById('statusLabel');
+            const selectBtn = document.getElementById('selectBtn');
+            try {
+                await ffmpeg.load();
+                statusLabel.innerText = "Nessun file multimediale caricato";
+                selectBtn.removeAttribute('disabled');
+            } catch (error) {
+                statusLabel.innerHTML = "<span style='color:red;'>Errore di caricamento. Ricarica la pagina.</span>";
+                console.error(error);
+            }
+        }
+        inizializzaFFmpeg();
+
+        // 2. Gestione dei file scelti dall'utente
+        function gestisciSelezione(input) {
+            fileCaricati = Array.from(input.files);
+            const status = document.getElementById('statusLabel');
+            const convertBtn = document.getElementById('convertBtn');
+            const progressArea = document.getElementById('progressArea');
+            
+            progressArea.style.display = 'none';
+            document.getElementById('progressBarFill').style.width = '0%';
+            document.getElementById('progressPercentage').innerText = '0%';
+
+            if (fileCaricati.length > 0) {
+                status.innerHTML = `Pronto per elaborare <span style='color:#ffffff; font-weight:bold;'>${fileCaricati.length} brani FLAC</span>`;
+                convertBtn.removeAttribute('disabled');
+            } else {
+                status.innerText = "Nessun file multimediale caricato";
+                convertBtn.setAttribute('disabled', 'true');
+            }
+        }
+
+        // 3. Processo di conversione REALE
+        async function avviaConversioneReale() {
+            if (fileCaricati.length === 0) return;
+
+            const status = document.getElementById('statusLabel');
+            const selectBtn = document.getElementById('selectBtn');
+            const convertBtn = document.getElementById('convertBtn');
+            const btnText = document.getElementById('btnText');
+            
+            const progressArea = document.getElementById('progressArea');
+            const progressBarFill = document.getElementById('progressBarFill');
+            const progressPercentage = document.getElementById('progressPercentage');
+            const progressFileIndex = document.getElementById('progressFileIndex');
+
+            selectBtn.setAttribute('disabled', 'true');
+            convertBtn.setAttribute('disabled', 'true');
+            status.style.display = 'none'; 
+            progressArea.style.display = 'block';
+
+            // Tracciamento del progresso interno di FFmpeg
+            ffmpeg.setProgress(({ ratio }) => {
+                if (ratio >= 0 && ratio <= 1) {
+                    const progressoCorrente = Math.round(ratio * 100);
+                    progressBarFill.style.width = progressoCorrente + '%';
+                    progressPercentage.innerText = progressoCorrente + '%';
+                }
+            });
+
+            // Ciclo di conversione file per file
+            for (let i = 0; i < fileCaricati.length; i++) {
+                const file = fileCaricati[i];
+                progressFileIndex.innerText = `Conversione brano ${i + 1} di ${fileCaricati.length}...`;
+                
+                const nomeInput = file.name;
+                const nomeOutput = nomeInput.replace(/\.[^/.]+$/, "") + ".mp3";
+
+                // Scrittura nella memoria virtuale
+                ffmpeg.FS('writeFile', nomeInput, await fetchFile(file));
+
+                // Esecuzione del comando FFmpeg (320kbps CBR, mantiene i metadati)
+                await ffmpeg.run('-i', nomeInput, '-ab', '320k', '-map_metadata', '0', nomeOutput);
+
+                // Lettura del file convertito
+                const data = ffmpeg.FS('readFile', nomeOutput);
+
+                // Download automatico nel browser
+                const blob = new Blob([data.buffer], { type: 'audio/mp3' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = nomeOutput;
+                a.click();
+
+                // Pulizia memoria virtuale
+                ffmpeg.FS('unlink', nomeInput);
+                ffmpeg.FS('unlink', nomeOutput);
+            }
+
+            // Ripristino dell'interfaccia a conversione ultimata
+            progressArea.style.display = 'none';
+            status.style.display = 'block';
+            status.innerHTML = "✨ <span style='color:#ffffff; font-weight:bold;'>Processo completato!</span><br>I file sono stati salvati sul tuo dispositivo.";
+            
+            btnText.innerText = "Converti altri file";
+            selectBtn.removeAttribute('disabled');
+            convertBtn.removeAttribute('disabled');
+            fileCaricati = [];
+            document.getElementById('fileInput').value = "";
+        }
+    </script>
+</body>
+</html>
