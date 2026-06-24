@@ -51,53 +51,6 @@
             align-items: center;
             min-height: 100vh;
             padding: 40px 20px;
-            position: relative;
-        }
-
-        /* Switch Animato Tema */
-        .theme-switch-container {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--text-muted);
-        }
-
-        .switch-track {
-            width: 50px;
-            height: 26px;
-            background-color: #1c2318;
-            border: 1px solid #35432e;
-            border-radius: 100px;
-            position: relative;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-
-        [data-theme="light"] .switch-track {
-            background-color: #e8ebe6;
-            border-color: #b8c0b2;
-        }
-
-        .switch-thumb {
-            width: 20px;
-            height: 20px;
-            background-color: #e09f67;
-            border-radius: 50%;
-            position: absolute;
-            top: 2px;
-            left: 3px;
-            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        }
-
-        [data-theme="light"] .switch-thumb {
-            transform: translateX(22px);
-            background-color: #c6834b;
         }
 
         /* Layout Principale */
@@ -110,6 +63,52 @@
             border: 1px solid var(--border-color);
             padding: 40px;
             text-align: center;
+            position: relative;
+        }
+
+        /* Posizionamento Switch dentro il Box principale */
+        .theme-switch-container {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+            width: 100%;
+        }
+
+        .switch-track {
+            width: 46px;
+            height: 24px;
+            background-color: #1c2318;
+            border: 1px solid #35432e;
+            border-radius: 100px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        [data-theme="light"] .switch-track {
+            background-color: #e8ebe6;
+            border-color: #b8c0b2;
+        }
+
+        .switch-thumb {
+            width: 18px;
+            height: 18px;
+            background-color: #e09f67;
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            left: 3px;
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        [data-theme="light"] .switch-thumb {
+            transform: translateX(20px);
+            background-color: #c6834b;
         }
 
         .brand-container {
@@ -256,14 +255,14 @@
 </head>
 <body>
 
-    <div class="theme-switch-container">
-        <span>Tema</span>
-        <div class="switch-track" id="themeSwitch" onclick="toggleTheme()">
-            <div class="switch-thumb"></div>
-        </div>
-    </div>
-
     <div class="converter-container">
+        <div class="theme-switch-container">
+            <span>Tema chiaro</span>
+            <div class="switch-track" id="themeSwitch" onclick="toggleTheme()">
+                <div class="switch-thumb"></div>
+            </div>
+        </div>
+
         <div class="brand-container">
             <h1>BIXIUS CONVERTER</h1>
             <div class="badge">FLAC TO MP3 • PRO ENGINE</div>
@@ -306,7 +305,6 @@
         const ffmpeg = createFFmpeg({ log: true });
         let fileCaricati = [];
 
-        // 1. Inizializzazione FFmpeg
         async function inizializzaFFmpeg() {
             const statusLabel = document.getElementById('statusLabel');
             const selectBtn = document.getElementById('selectBtn');
@@ -321,7 +319,6 @@
         }
         inizializzaFFmpeg();
 
-        // 2. Gestione selezione file
         function gestisciSelezione(input) {
             fileCaricati = Array.from(input.files);
             const status = document.getElementById('statusLabel');
@@ -342,7 +339,6 @@
             }
         }
 
-        // 3. Conversione e Compressione ZIP + Log Errori
         async function avviaConversioneReale() {
             if (fileCaricati.length === 0) return;
 
@@ -362,7 +358,7 @@
             progressArea.style.display = 'block';
 
             const zip = new JSZip();
-            let braniFalliti = []; // Array per accumulare i log di eventuali errori
+            let braniFalliti = [];
 
             ffmpeg.setProgress(({ ratio }) => {
                 if (ratio >= 0 && ratio <= 1) {
@@ -380,36 +376,25 @@
                 progressFileIndex.innerHTML = `Conversione brano ${i + 1} di ${fileCaricati.length}: <span style="color: var(--text-main); font-weight:bold;">${file.name}</span>`;
 
                 try {
-                    // Scrittura nella memoria virtuale
                     ffmpeg.FS('writeFile', nomeInput, await fetchFile(file));
-                    
-                    /* Esecuzione FFmpeg con Multi-threading nativo:
-                       '-threads', '0' dice a FFmpeg di usare automaticamente tutti i core logici disponibili sul processore del PC o Smartphone */
                     await ffmpeg.run('-i', nomeInput, '-threads', '0', '-ab', '320k', '-map_metadata', '0', nomeOutput);
                     
-                    // Lettura e archiviazione nello ZIP
                     const data = ffmpeg.FS('readFile', nomeOutput);
                     zip.file(nomeOutput, data.buffer);
 
-                    // Pulizia file riuscito
                     ffmpeg.FS('unlink', nomeInput);
                     ffmpeg.FS('unlink', nomeOutput);
 
                 } catch (error) {
                     console.error(`Errore sul file ${file.name}:`, error);
-                    // Registriamo il brano fallito per il txt finale
                     braniFalliti.push(`File: ${file.name} | Errore riscontrato durante l'elaborazione FFmpeg.`);
-                    
-                    // Mostriamo a schermo un piccolo alert visivo temporaneo senza bloccare la coda
                     progressFileIndex.innerHTML = `<span style="color:#ff5555; font-weight:bold;">Salta brano corrotto: ${file.name}</span>`;
                     
-                    // Pulizia d'emergenza della memoria virtuale in caso di crash del singolo file
                     try { ffmpeg.FS('unlink', nomeInput); } catch(e){}
                     try { ffmpeg.FS('unlink', nomeOutput); } catch(e){}
                 }
             }
 
-            // --- Generazione del file LOG di testo (Solo se ci sono stati errori reali) ---
             if (braniFalliti.length > 0) {
                 const testoLog = `BIXIUS CONVERTER - LOG DI ERRORE CONVERSIONE\n` +
                                  `Data: ${new Date().toLocaleString()}\n` +
@@ -425,7 +410,6 @@
                 aLog.click();
             }
 
-            // Generazione pacchetto ZIP finale
             progressFileIndex.innerText = "Creazione pacchetto ZIP in corso...";
             progressBarFill.style.width = '100%';
             progressPercentage.innerText = '100%';
@@ -442,7 +426,7 @@
             status.style.display = 'block';
 
             if (braniFalliti.length > 0) {
-                status.innerHTML = `✨ <span style='color:var(--text-main); font-weight:bold;'>Elaborazione conclusa!</span><br>L'archivio <span style='color:#e09f67;'>Music converted.zip</span> è pronto.<br>⚠️ <span style="color:#ff5555; font-weight:bold;">Attenzione:</span> alcuni file erano corrotti ed è stato scaricato un file <span style="color:#ff5555;">errori_conversione.txt</span> con i dettagli.`;
+                status.innerHTML = `✨ <span style='color:var(--text-main); font-weight:bold;'>Elaborazione conclusa!</span><br>L'archivio <span style='color:#e09f67;'>Music converted.zip</span> è pronto.<br>⚠️ <span style="color:#ff5555; font-weight:bold;">Attenzione:</span> alcuni file erano corrotti ed è stato scaricato un file <span style="color:#ff5555;">errori_conversione.txt</span>.`;
             } else {
                 status.innerHTML = "✨ <span style='color:var(--text-main); font-weight:bold;'>Elaborazione completata con successo!</span><br>L'archivio <span style='color:#e09f67;'>Music converted.zip</span> è stato scaricato correttamente.";
             }
