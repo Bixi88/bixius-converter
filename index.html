@@ -18,6 +18,7 @@
             --btn-sec-border: #35432e;
             --btn-sec-hover: #253020;
             --btn-sec-hover-border: #485c3f;
+            --input-bg: rgba(0, 0, 0, 0.2);
         }
 
         [data-theme="light"] {
@@ -32,6 +33,7 @@
             --btn-sec-border: #b8c0b2;
             --btn-sec-hover: #dadfd7;
             --btn-sec-hover-border: #a3ae9b;
+            --input-bg: #f9f9f9;
         }
 
         /* Reset e Font */
@@ -66,7 +68,7 @@
             position: relative;
         }
 
-        /* Posizionamento Switch dentro il Box principale */
+        /* Switch Tema */
         .theme-switch-container {
             display: flex;
             justify-content: flex-end;
@@ -145,6 +147,47 @@
             margin-bottom: 32px;
             min-height: 24px;
             line-height: 1.5;
+        }
+
+        /* --- UI RINOMINA PLAYLIST --- */
+        .playlist-input-wrapper {
+            margin-bottom: 24px;
+            text-align: left;
+            max-width: 320px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .playlist-input-wrapper label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .playlist-input-field {
+            width: 100%;
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 14px 18px;
+            color: var(--text-main);
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .playlist-input-field:focus {
+            border-color: #e09f67;
+            box-shadow: 0 0 0 3px rgba(224, 159, 103, 0.1);
+        }
+
+        .playlist-input-field::placeholder {
+            color: var(--text-muted);
+            opacity: 0.5;
         }
 
         /* Container Progresso */
@@ -249,7 +292,6 @@
     </style>
 
     <script src="coi-serviceworker.js"></script>
-    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
 </head>
@@ -269,6 +311,11 @@
         </div>
         
         <p class="status-text" id="statusLabel">Inizializzazione motore di conversione...</p>
+
+        <div class="playlist-input-wrapper">
+            <label for="playlistName">Inserisci nome Playlist</label>
+            <input type="text" id="playlistName" class="playlist-input-field" placeholder="Es: Summer_Hits_2024">
+        </div>
 
         <div class="progress-container" id="progressArea">
             <div class="progress-labels">
@@ -345,6 +392,7 @@
             const selectBtn = document.getElementById('selectBtn');
             const convertBtn = document.getElementById('convertBtn');
             const btnText = document.getElementById('btnText');
+            const playlistInput = document.getElementById('playlistName');
             
             const progressArea = document.getElementById('progressArea');
             const progressBarFill = document.getElementById('progressBarFill');
@@ -353,6 +401,7 @@
 
             selectBtn.setAttribute('disabled', 'true');
             convertBtn.setAttribute('disabled', 'true');
+            playlistInput.setAttribute('disabled', 'true');
             status.style.display = 'none'; 
             progressArea.style.display = 'block';
 
@@ -370,14 +419,12 @@
             for (let i = 0; i < fileCaricati.length; i++) {
                 const file = fileCaricati[i];
                 const nomeInput = file.name;
-                // Sostituisce l'estensione finale corrente (.flac o .opus) con .mp3
                 const nomeOutput = nomeInput.replace(/\.[^/.]+$/, "") + ".mp3";
 
-                progressFileIndex.innerHTML = `Conversione brano ${i + 1} di ${fileCaricati.length}: <span style="color: var(--text-main); font-weight:bold;">${file.name}</span>`;
+                progressFileIndex.innerHTML = `Conversione ${i + 1} di ${fileCaricati.length}: <span style="color: var(--text-main); font-weight:bold;">${file.name}</span>`;
 
                 try {
                     ffmpeg.FS('writeFile', nomeInput, await fetchFile(file));
-                    // Converte qualsiasi cosa riceva a 320k CBR sfruttando il multi-threading
                     await ffmpeg.run('-i', nomeInput, '-threads', '0', '-ab', '320k', '-map_metadata', '0', nomeOutput);
                     
                     const data = ffmpeg.FS('readFile', nomeOutput);
@@ -388,8 +435,8 @@
 
                 } catch (error) {
                     console.error(`Errore sul file ${file.name}:`, error);
-                    braniFalliti.push(`File: ${file.name} | Errore riscontrato durante l'elaborazione FFmpeg.`);
-                    progressFileIndex.innerHTML = `<span style="color:#ff5555; font-weight:bold;">Salta brano corrotto: ${file.name}</span>`;
+                    braniFalliti.push(`File: ${file.name} | Errore FFmpeg.`);
+                    progressFileIndex.innerHTML = `<span style="color:#ff5555; font-weight:bold;">Salta corrotto: ${file.name}</span>`;
                     
                     try { ffmpeg.FS('unlink', nomeInput); } catch(e){}
                     try { ffmpeg.FS('unlink', nomeOutput); } catch(e){}
@@ -397,43 +444,41 @@
             }
 
             if (braniFalliti.length > 0) {
-                const testoLog = `BIXIUS CONVERTER - LOG DI ERRORE CONVERSIONE\n` +
+                const testoLog = `BIXIUS CONVERTER - LOG DI ERRORE\n` +
                                  `Data: ${new Date().toLocaleString()}\n` +
-                                 `Totale brani falliti/saltati: ${braniFalliti.length}\n` +
-                                 `--------------------------------------------------\n\n` +
                                  braniFalliti.join('\n');
                 
                 const blobLog = new Blob([testoLog], { type: 'text/plain;charset=utf-8' });
-                const urlLog = URL.createObjectURL(blobLog);
-                const aLog = document.createElement('a');
-                aLog.href = urlLog;
-                aLog.download = "errori_conversione.txt";
-                aLog.click();
+                zip.file("errori_conversione.txt", blobLog);
             }
 
-            progressFileIndex.innerText = "Creazione pacchetto ZIP in corso...";
+            progressFileIndex.innerText = "Preparazione ZIP...";
             progressBarFill.style.width = '100%';
             progressPercentage.innerText = '100%';
 
             const contenutoZip = await zip.generateAsync({ type: 'blob' });
             
+            const playlistValue = playlistInput.value.trim();
+            const nomeFinaleZip = playlistValue ? `${playlistValue}.zip` : "Music converted.zip";
+
             const url = URL.createObjectURL(contenutoZip);
             const a = document.createElement('a');
             a.href = url;
-            a.download = "Music converted.zip";
+            a.download = nomeFinaleZip;
             a.click();
 
             progressArea.style.display = 'none';
             status.style.display = 'block';
 
             if (braniFalliti.length > 0) {
-                status.innerHTML = `✨ <span style='color:var(--text-main); font-weight:bold;'>Elaborazione conclusa!</span><br>L'archivio <span style='color:#e09f67;'>Music converted.zip</span> è pronto.<br>⚠️ <span style="color:#ff5555; font-weight:bold;">Attenzione:</span> alcuni file erano corrotti ed è stato scaricato un file <span style="color:#ff5555;">errori_conversione.txt</span>.`;
+                status.innerHTML = `✨ <span style='color:var(--text-main); font-weight:bold;'>Completato!</span><br>L'archivio <span style='color:#e09f67;'>${nomeFinaleZip}</span> è pronto.<br>⚠️ Alcuni file erano corrotti (log incluso nello ZIP).`;
             } else {
-                status.innerHTML = "✨ <span style='color:var(--text-main); font-weight:bold;'>Elaborazione completata con successo!</span><br>L'archivio <span style='color:#e09f67;'>Music converted.zip</span> è stato scaricato correttamente.";
+                status.innerHTML = "✨ <span style='color:var(--text-main); font-weight:bold;'>Completato!</span><br>L'archivio <span style='color:#e09f67;'>${nomeFinaleZip}</span> è stato scaricato.";
             }
             
-            btnText.innerText = "Avvia Nuova Conversione";
+            btnText.innerText = "Nuova Conversione";
             selectBtn.removeAttribute('disabled');
+            playlistInput.removeAttribute('disabled');
             fileCaricati = [];
             document.getElementById('fileInput').value = "";
         }
