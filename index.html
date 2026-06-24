@@ -265,7 +265,7 @@
 
         <div class="brand-container">
             <h1>BIXIUS CONVERTER</h1>
-            <div class="badge">FLAC TO MP3 • PRO ENGINE</div>
+            <div class="badge">FLAC/OPUS TO MP3 • PRO ENGINE</div>
         </div>
         
         <p class="status-text" id="statusLabel">Inizializzazione motore di conversione...</p>
@@ -281,10 +281,10 @@
         </div>
 
         <div class="btn-group">
-            <input type="file" id="fileInput" multiple accept=".flac" onchange="gestisciSelezione(this)">
+            <input type="file" id="fileInput" multiple accept=".flac,.opus,audio/ogg,audio/opus" onchange="gestisciSelezione(this)">
 
             <button class="btn btn-secondary" id="selectBtn" onclick="document.getElementById('fileInput').click()" disabled>
-                Sfoglia file FLAC
+                Sfoglia file FLAC / OPUS
             </button>
             
             <button class="btn btn-primary" id="convertBtn" onclick="avviaConversioneReale()" disabled>
@@ -294,7 +294,6 @@
     </div>
 
     <script>
-        // Gestione Tema Chiara/Scura
         function toggleTheme() {
             const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
@@ -331,7 +330,7 @@
             document.getElementById('progressPercentage').innerText = '0%';
 
             if (fileCaricati.length > 0) {
-                status.innerHTML = `File pronti per l'elaborazione: <span style='color:var(--text-main); font-weight:bold;'>${fileCaricati.length} brani FLAC</span>`;
+                status.innerHTML = `File pronti per l'elaborazione: <span style='color:var(--text-main); font-weight:bold;'>${fileCaricati.length} brani totali</span>`;
                 convertBtn.removeAttribute('disabled');
             } else {
                 status.innerText = "Nessun file selezionato. Pronto al caricamento.";
@@ -371,12 +370,14 @@
             for (let i = 0; i < fileCaricati.length; i++) {
                 const file = fileCaricati[i];
                 const nomeInput = file.name;
+                // Sostituisce l'estensione finale corrente (.flac o .opus) con .mp3
                 const nomeOutput = nomeInput.replace(/\.[^/.]+$/, "") + ".mp3";
 
                 progressFileIndex.innerHTML = `Conversione brano ${i + 1} di ${fileCaricati.length}: <span style="color: var(--text-main); font-weight:bold;">${file.name}</span>`;
 
                 try {
                     ffmpeg.FS('writeFile', nomeInput, await fetchFile(file));
+                    // Converte qualsiasi cosa riceva a 320k CBR sfruttando il multi-threading
                     await ffmpeg.run('-i', nomeInput, '-threads', '0', '-ab', '320k', '-map_metadata', '0', nomeOutput);
                     
                     const data = ffmpeg.FS('readFile', nomeOutput);
