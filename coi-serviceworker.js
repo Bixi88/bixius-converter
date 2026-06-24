@@ -14,6 +14,9 @@ if (typeof window === 'undefined') {
                         statusText: response.statusText,
                         headers: newHeaders,
                     });
+                }).catch((err) => {
+                    console.error("Errore nel fetch del Service Worker:", err);
+                    return fetch(event.request);
                 })
             );
         }
@@ -22,14 +25,17 @@ if (typeof window === 'undefined') {
     const currentScript = document.currentScript;
     window.addEventListener("load", async () => {
         try {
-            await navigator.serviceWorker.register(currentScript.src);
-            if (navigator.serviceWorker.controller) {
-                console.log("COI Service Worker pronto.");
-            } else {
-                window.location.reload();
+            if ("serviceWorker" in navigator) {
+                await navigator.serviceWorker.register(currentScript.src);
+                if (navigator.serviceWorker.controller) {
+                    console.log("COI Service Worker pronto e attivo.");
+                } else {
+                    // Primo avvio: ricarica la pagina per applicare i filtri di sicurezza
+                    window.location.reload();
+                }
             }
         } catch (err) {
-            console.error("Errore Service Worker COI:", err);
+            console.error("Errore durante la registrazione del Service Worker:", err);
         }
     });
 }
