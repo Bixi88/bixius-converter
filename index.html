@@ -173,11 +173,7 @@
     </style>
 
     <script src="coi-serviceworker.js"></script>
-    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/browser-id3-writer@4.4.0/dist/browser-id3-writer.min.js"></script>
-    
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
 </head>
 <body>
@@ -185,7 +181,7 @@
     <div class="converter-container">
         <div class="brand-container">
             <h1>BIXIUS CONVERTER</h1>
-            <div class="badge">FLAC TO MP3 • METADATA & COVER ART</div>
+            <div class="badge">FLAC TO MP3 • 320KBPS CBR</div>
         </div>
         
         <p class="status-text" id="statusLabel">Inizializzazione motore di conversione...</p>
@@ -254,26 +250,7 @@
             }
         }
 
-        // Helper asincrono per leggere i tag con jsmediatags
-        function leggiTagFlac(file) {
-            return new Promise((resolve) => {
-                if (!window.jsmediatags) {
-                    resolve(null);
-                    return;
-                }
-                window.jsmediatags.read(file, {
-                    onSuccess: function(tag) {
-                        resolve(tag.tags);
-                    },
-                    onError: function(error) {
-                        console.log("Tag nativi non estratti o assenti:", error);
-                        resolve(null);
-                    }
-                });
-            });
-        }
-
-        // 3. Conversione, Lettura/Scrittura Tag e Compressione ZIP
+        // 3. Conversione e Compressione ZIP
         async function avviaConversioneReale() {
             if (fileCaricati.length === 0) return;
 
@@ -304,62 +281,16 @@
 
             for (let i = 0; i < fileCaricati.length; i++) {
                 const file = fileCaricati[i];
-                const nomePulitoSenzaEstensione = file.name.replace(/\.[^/.]+$/, "");
                 progressFileIndex.innerText = `Conversione brano ${i + 1} di ${fileCaricati.length}: ${file.name}`;
                 
-                // Estrazione preventiva dei tag originali dal FLAC
-                const tagOriginali = await leggiTagFlac(file);
-
                 const nomeInput = file.name;
-                const nomeOutput = nomePulitoSenzaEstensione + ".mp3";
+                const nomeOutput = nomeInput.replace(/\.[^/.]+$/, "") + ".mp3";
 
-                // Conversione via FFmpeg a 320k CBR costante
                 ffmpeg.FS('writeFile', nomeInput, await fetchFile(file));
-                await ffmpeg.run('-i', nomeInput, '-ab', '320k', nomeOutput);
-                const mp3PuroDati = ffmpeg.FS('readFile', nomeOutput);
+                await ffmpeg.run('-i', nomeInput, '-ab', '320k', '-map_metadata', '0', nomeOutput);
+                const data = ffmpeg.FS('readFile', nomeOutput);
 
-                // Scrittura dei tag ID3v2 nell'MP3 appena generato
-                try {
-                    const writer = new ID3Writer(mp3PuroDati.buffer);
-                    
-                    // Se mancano i tag nel FLAC, estraiamo i valori di default o usiamo il nome del file
-                    const titolo = (tagOriginali && tagOriginali.title) ? tagOriginali.title : nomePulitoSenzaEstensione;
-                    const artista = (tagOriginali && tagOriginali.artist) ? tagOriginali.artist : "Unknown Artist";
-                    const album = (tagOriginali && tagOriginali.album) ? tagOriginali.album : "Music Converted";
-                    const anno = (tagOriginali && tagOriginali.year) ? parseInt(tagOriginali.year) : null;
-                    const traccia = (tagOriginali && tagOriginali.track) ? parseInt(tagOriginali.track) : null;
-                    const genere = (tagOriginali && tagOriginali.genre) ? [tagOriginali.genre] : ["Tracks"];
-
-                    writer.setFrame('TIT2', titolo)
-                          .setFrame('TPE1', [artista])
-                          .setFrame('TALB', album)
-                          .setFrame('TCON', genere);
-                    
-                    if (anno && !isNaN(anno)) writer.setFrame('TYER', anno);
-                    if (traccia && !isNaN(traccia)) writer.setFrame('TRCK', traccia.toString());
-
-                    // Se c'è una copertina incorporata nel FLAC, la inseriamo
-                    if (tagOriginali && tagOriginali.picture) {
-                        const pic = tagOriginali.picture;
-                        const formatoImmagine = pic.mime || "image/jpeg";
-                        const byteImmagine = new Uint8Array(pic.data);
-                        
-                        writer.setFrame('APIC', {
-                            type: 3, // Front cover
-                            data: byteImmagine.buffer,
-                            description: 'Front Cover',
-                            useCover: true,
-                            mime: formatoImmagine
-                        });
-                    }
-
-                    writer.addTag();
-                    zip.file(nomeOutput, writer.arrayBuffer);
-
-                } catch (tagError) {
-                    console.error("Errore scrittura metadati avanzati, salvo brano standard:", tagError);
-                    zip.file(nomeOutput, mp3PuroDati.buffer);
-                }
+                zip.file(nomeOutput, data.buffer);
 
                 ffmpeg.FS('unlink', nomeInput);
                 ffmpeg.FS('unlink', nomeOutput);
@@ -379,7 +310,7 @@
 
             progressArea.style.display = 'none';
             status.style.display = 'block';
-            status.innerHTML = "✨ <span style='color:#ffffff; font-weight:bold;'>Elaborazione completata!</span><br>L'archivio <span style='color:#e09f67;'>Music converted.zip</span> è pronto con metadati e copertine incorporate.";
+            status.innerHTML = "✨ <span style='color:#ffffff; font-weight:bold;'>Elaborazione completata!</span><br>L'archivio <span style='color:#e09f67;'>Music converted.zip</span> è stato scaricato.";
             
             btnText.innerText = "Avvia Nuova Conversione";
             selectBtn.removeAttribute('disabled');
