@@ -173,6 +173,7 @@
     </style>
 
     <script src="coi-serviceworker.js"></script>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
 </head>
@@ -281,17 +282,24 @@
 
             for (let i = 0; i < fileCaricati.length; i++) {
                 const file = fileCaricati[i];
-                progressFileIndex.innerText = `Conversione brano ${i + 1} di ${fileCaricati.length}: ${file.name}`;
-                
                 const nomeInput = file.name;
                 const nomeOutput = nomeInput.replace(/\.[^/.]+$/, "") + ".mp3";
 
+                progressFileIndex.innerText = `Conversione brano ${i + 1} di ${fileCaricati.length}: ${file.name}`;
+
+                // Scrittura nella memoria virtuale
                 ffmpeg.FS('writeFile', nomeInput, await fetchFile(file));
+                
+                // Conversione a 320k CBR mantenendo i metadati standard (-map_metadata 0)
                 await ffmpeg.run('-i', nomeInput, '-ab', '320k', '-map_metadata', '0', nomeOutput);
+                
+                // Lettura file convertito
                 const data = ffmpeg.FS('readFile', nomeOutput);
 
+                // Aggiunta allo ZIP con il nome corretto
                 zip.file(nomeOutput, data.buffer);
 
+                // Pulizia memoria
                 ffmpeg.FS('unlink', nomeInput);
                 ffmpeg.FS('unlink', nomeOutput);
             }
@@ -310,7 +318,7 @@
 
             progressArea.style.display = 'none';
             status.style.display = 'block';
-            status.innerHTML = "✨ <span style='color:#ffffff; font-weight:bold;'>Elaborazione completata!</span><br>L'archivio <span style='color:#e09f67;'>Music converted.zip</span> è stato scaricato.";
+            status.innerHTML = "✨ <span style='color:#ffffff; font-weight:bold;'>Elaborazione completata!</span><br>L'archivio <span style='color:#e09f67;'>Music converted.zip</span> è stato scaricato sul tuo computer.";
             
             btnText.innerText = "Avvia Nuova Conversione";
             selectBtn.removeAttribute('disabled');
